@@ -49,11 +49,37 @@ jobs:
         run: pylint --fail-under=9.0 app.py
 
   # ==========================================
+  # CI JOB 3: Dependency Vulnerability Scan (SCA)
+  # ==========================================
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install pip-audit
+        run: python -m pip install --upgrade pip pip-audit
+
+      - name: Run Dependency Vulnerability Scan
+        run: pip-audit -r requirements.txt
+
+  # ==========================================
   # CD STAGE: Deploy ke VM
+  # Hanya berjalan pada push ke main/master
   # ==========================================
   deploy-to-vm:
     name: Build & Deploy to VirtualBox VM
-    needs: [sast-scan, pylint-check]
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' ||
+       github.ref == 'refs/heads/master')
+    needs: [sast-scan, pylint-check, dependency-scan]
     runs-on: self-hosted
     steps:
       - name: Checkout Source Code
