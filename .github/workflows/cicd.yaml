@@ -89,6 +89,30 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ==========================================
+  # CI JOB 5: DAST Scan (OWASP ZAP)
+  # ==========================================
+  dast-scan:
+    name: OWASP ZAP DAST Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Build and Run Application
+        run: |
+          docker build -t secure-flask-app:dast .
+          docker run -d -p 5000:5000 --name dast-app secure-flask-app:dast
+          sleep 10
+          curl -f http://localhost:5000
+
+      - name: Run ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: "http://localhost:5000"
+          allow_issue_writing: false
+          fail_action: false
+
+  # ==========================================
   # CD STAGE: Deploy ke VM
   # Hanya berjalan pada push ke main/master
   # ==========================================
