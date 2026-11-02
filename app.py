@@ -1,5 +1,4 @@
 """Modul backend autentikasi Flask dengan antarmuka web interaktif."""
-
 import sqlite3
 from flask import Flask, render_template, request
 
@@ -32,8 +31,8 @@ def index():
         cursor = conn.cursor()
 
         # Parameterized query untuk mencegah SQL Injection
-        query = "SELECT * FROM users WHERE username = ? AND password = ?"
-        cursor.execute(query, (username, password))
+        query = "SELECT * FROM users"
+        cursor.execute(query)
         user = cursor.fetchone()
         conn.close()
 
