@@ -122,7 +122,8 @@ jobs:
         with:
           target: "http://localhost:5000"
           allow_issue_writing: false
-          fail_action: false
+          fail_action: true
+          rules_file_name: ".zap/rules.tsv"
 
       - name: Show Logs and Cleanup
         if: always()
@@ -140,7 +141,7 @@ jobs:
       github.event_name == 'push' &&
       (github.ref == 'refs/heads/main' ||
        github.ref == 'refs/heads/master')
-    needs: [sast-scan, pylint-check, dependency-scan, secret-scan]
+    needs: [sast-scan, pylint-check, dependency-scan, secret-scan, dast-scan]
     runs-on: self-hosted
     steps:
       - name: Checkout Source Code
