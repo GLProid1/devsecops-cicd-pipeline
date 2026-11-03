@@ -102,15 +102,34 @@ jobs:
         run: |
           docker build -t secure-flask-app:dast .
           docker run -d -p 5000:5000 --name dast-app secure-flask-app:dast
-          sleep 10
-          curl -f http://localhost:5000
+
+      - name: Wait for Application to Be Ready
+        run: |
+          for i in {1..15}; do
+            if curl -sf http://localhost:5000 > /dev/null; then
+              echo "App ready after attempt $i"
+              exit 0
+            fi
+            echo "Attempt $i: app not ready, retrying in 2s..."
+            sleep 2
+          done
+          echo "App did not become ready in time. Container logs:"
+          docker logs dast-app
+          exit 1
 
       - name: Run ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.14.0
         with:
           target: "http://localhost:5000"
           allow_issue_writing: false
-          fail_action: false
+          fail_action: true
+          rules_file_name: ".zap/rules.tsv"
+
+      - name: Show Logs and Cleanup
+        if: always()
+        run: |
+          docker logs dast-app || true
+          docker rm -f dast-app || true
 
   # ==========================================
   # CD STAGE: Deploy ke VM
@@ -122,7 +141,7 @@ jobs:
       github.event_name == 'push' &&
       (github.ref == 'refs/heads/main' ||
        github.ref == 'refs/heads/master')
-    needs: [sast-scan, pylint-check, dependency-scan, secret-scan]
+    needs: [sast-scan, pylint-check, dependency-scan, secret-scan, dast-scan]
     runs-on: self-hosted
     steps:
       - name: Checkout Source Code
